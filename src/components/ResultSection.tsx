@@ -40,11 +40,6 @@ export function ResultSection({ content, setContent, t }: ResultSectionProps) {
         
         <div className="flex items-center gap-3">
           <h2 className="text-sm font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider shrink-0">{t('latexEditor')}</h2>
-          <div className="hidden sm:flex space-x-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-red-500 hover:bg-red-400 transition-colors cursor-pointer"></div>
-            <div className="w-2.5 h-2.5 rounded-full bg-yellow-500 hover:bg-yellow-400 transition-colors cursor-pointer"></div>
-            <div className="w-2.5 h-2.5 rounded-full bg-green-500 hover:bg-green-400 transition-colors cursor-pointer"></div>
-          </div>
         </div>
         
         <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
