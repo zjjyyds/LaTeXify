@@ -6,6 +6,7 @@ import { translations, TranslationKey, Language } from './lib/i18n';
 import { SettingsModal } from './components/SettingsModal';
 import { DashboardModal } from './components/DashboardModal';
 import { CalloutBuilderModal } from './components/CalloutBuilderModal';
+import 'katex/dist/katex.min.css';
 
 export interface UsageStats {
   promptTokens: number;
