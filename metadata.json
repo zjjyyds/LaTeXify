@@ -1,0 +1,6 @@
+{
+  "name": "MathTex",
+  "description": "Extract math and computer science (408) problems from images into LaTeX and Markdown, with one-click export.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
