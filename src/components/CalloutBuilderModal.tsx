@@ -207,7 +207,14 @@ export function CalloutBuilderModal({ isOpen, onClose, initialContent = '' }: { 
       
       if (block.content) {
         lines.push(pfx.trimEnd());
-        const contentLines = block.content.split('\n');
+        
+        // Remove spaces inside inline math formulas for Obsidian compatibility 
+        // e.g., "$  formula $" -> "$formula$"
+        let fixedContent = block.content.replace(/(?<!\$)\$([^$\n]+)\$(?!\$)/g, (match, p1) => {
+           return `$${p1.trim()}$`;
+        });
+        
+        const contentLines = fixedContent.split('\n');
         for (const line of contentLines) {
           lines.push(`${pfx}${line}`.trimEnd());
         }
