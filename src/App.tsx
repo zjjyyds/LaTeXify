@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Sigma, Sun, Moon, Languages, Settings, Activity } from 'lucide-react';
+import { Sigma, Sun, Moon, Languages, Settings, Activity, Blocks } from 'lucide-react';
 import { UploadZone } from './components/UploadZone';
 import { ResultSection } from './components/ResultSection';
 import { translations, TranslationKey, Language } from './lib/i18n';
 import { SettingsModal } from './components/SettingsModal';
 import { DashboardModal } from './components/DashboardModal';
+import { CalloutBuilderModal } from './components/CalloutBuilderModal';
 
 export interface UsageStats {
   promptTokens: number;
@@ -27,6 +28,7 @@ export default function App() {
   // Settings state
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+  const [isCalloutBuilderOpen, setIsCalloutBuilderOpen] = useState(false);
   
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('latexify_apiKey') || '');
   const [model, setModel] = useState(() => localStorage.getItem('latexify_model') || 'gemini-3.1-pro-preview');
@@ -110,6 +112,11 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#09090b] text-slate-900 dark:text-zinc-100 font-sans selection:bg-indigo-500/30 selection:text-indigo-600 dark:selection:text-indigo-200 transition-colors duration-200">
+      <CalloutBuilderModal 
+        isOpen={isCalloutBuilderOpen} 
+        onClose={() => setIsCalloutBuilderOpen(false)} 
+        initialContent={result}
+      />
       <div className="max-w-[1280px] mx-auto p-4 md:p-6 flex flex-col min-h-screen space-y-6">
         
         <header className="flex justify-between items-center shrink-0">
@@ -121,6 +128,15 @@ export default function App() {
           </div>
           <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3">
             <div className="flex items-center space-x-1 sm:space-x-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-full p-1 shadow-sm">
+              <button 
+                onClick={() => setIsCalloutBuilderOpen(true)}
+                className="flex items-center justify-center space-x-1.5 px-3 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-400 font-medium text-xs transition-colors"
+                title="Obsidian Callout 构建器"
+              >
+                <Blocks className="w-4 h-4" />
+                <span className="hidden sm:inline">构建 Callout</span>
+              </button>
+              <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-1"></div>
               <button 
                 onClick={() => setIsDashboardOpen(true)}
                 className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-green-50 dark:hover:bg-green-500/10 text-green-600 dark:text-green-500 transition-colors"
