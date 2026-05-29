@@ -221,7 +221,7 @@ export function CalloutBuilderModal({ isOpen, onClose, initialContent = '' }: { 
       }
     }
     
-    setGeneratedMd(lines.join('\n'));
+    setGeneratedMd(lines.join('\n') + '\n\n');
   }, [blocks]);
 
   const addBlock = (index = blocks.length - 1) => {
