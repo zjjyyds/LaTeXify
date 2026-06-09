@@ -121,6 +121,9 @@ export function CalloutBuilderModal({ isOpen, onClose, initialContent = '' }: { 
   const [sourceHistory, setSourceHistory] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem('latexify_callout_source_his') || '[]'); } catch { return []; }
   });
+  const [topicQnumMap, setTopicQnumMap] = useState<Record<string, string>>(() => {
+    try { return JSON.parse(localStorage.getItem('latexify_callout_topic_qnum_map') || '{}'); } catch { return {}; }
+  });
 
   useEffect(() => {
     localStorage.setItem('latexify_callout_qnum', qnum);
@@ -276,6 +279,17 @@ export function CalloutBuilderModal({ isOpen, onClose, initialContent = '' }: { 
       localStorage.setItem('latexify_callout_source_his', JSON.stringify(newHis));
     }
     
+    let nextQnum = qnum;
+    if (qnum) {
+      nextQnum = qnum.replace(/(\d+)(?!.*\d)/, (match) => String(parseInt(match, 10) + 1));
+      setQnum(nextQnum);
+      if (topic) {
+        const newMap = { ...topicQnumMap, [topic]: nextQnum };
+        setTopicQnumMap(newMap);
+        localStorage.setItem('latexify_callout_topic_qnum_map', JSON.stringify(newMap));
+      }
+    }
+    
     await navigator.clipboard.writeText(generatedMd);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -359,7 +373,15 @@ export function CalloutBuilderModal({ isOpen, onClose, initialContent = '' }: { 
                               type="text" 
                               placeholder="题号"
                               value={qnum}
-                              onChange={(e) => setQnum(e.target.value)}
+                              onChange={(e) => {
+                                const newQnum = e.target.value;
+                                setQnum(newQnum);
+                                if (topic) {
+                                  const newMap = { ...topicQnumMap, [topic]: newQnum };
+                                  setTopicQnumMap(newMap);
+                                  localStorage.setItem('latexify_callout_topic_qnum_map', JSON.stringify(newMap));
+                                }
+                              }}
                               className="flex-[0.5] min-w-[50px] text-xs py-1 px-2 rounded bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-700 focus:outline-none focus:border-indigo-500"
                            />
                            <input 
@@ -367,7 +389,13 @@ export function CalloutBuilderModal({ isOpen, onClose, initialContent = '' }: { 
                               placeholder="方向"
                               list="topic-history"
                               value={topic}
-                              onChange={(e) => setTopic(e.target.value)}
+                              onChange={(e) => {
+                                const newTopic = e.target.value;
+                                setTopic(newTopic);
+                                if (topicQnumMap[newTopic]) {
+                                  setQnum(topicQnumMap[newTopic]);
+                                }
+                              }}
                               className="flex-1 min-w-[70px] text-xs py-1 px-2 rounded bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-700 focus:outline-none focus:border-indigo-500"
                            />
                            <input 
