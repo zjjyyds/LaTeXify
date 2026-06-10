@@ -105,30 +105,33 @@ function CalloutPreviewBlock({ node }: { node: BlockNode }) {
    );
 }
 
+const safeGetItem = (key: string) => { try { return localStorage.getItem(key); } catch { return null; } };
+const safeSetItem = (key: string, value: string) => { try { localStorage.setItem(key, value); } catch {} };
+
 export function CalloutBuilderModal({ isOpen, onClose, initialContent = '' }: { isOpen: boolean; onClose: () => void; initialContent?: string; }) {
   const [blocks, setBlocks] = useState<CalloutBlock[]>([]);
   const [copied, setCopied] = useState(false);
   const [generatedMd, setGeneratedMd] = useState('');
   const [viewMode, setViewMode] = useState<'preview' | 'source'>('preview');
 
-  const [qnum, setQnum] = useState(() => localStorage.getItem('latexify_callout_qnum') || '');
-  const [topic, setTopic] = useState(() => localStorage.getItem('latexify_callout_topic') || '');
-  const [source, setSource] = useState(() => localStorage.getItem('latexify_callout_source') || '');
+  const [qnum, setQnum] = useState(() => safeGetItem('latexify_callout_qnum') || '');
+  const [topic, setTopic] = useState(() => safeGetItem('latexify_callout_topic') || '');
+  const [source, setSource] = useState(() => safeGetItem('latexify_callout_source') || '');
 
   const [topicHistory, setTopicHistory] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem('latexify_callout_topic_his') || '[]'); } catch { return []; }
+    try { return JSON.parse(safeGetItem('latexify_callout_topic_his') || '[]'); } catch { return []; }
   });
   const [sourceHistory, setSourceHistory] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem('latexify_callout_source_his') || '[]'); } catch { return []; }
+    try { return JSON.parse(safeGetItem('latexify_callout_source_his') || '[]'); } catch { return []; }
   });
   const [topicQnumMap, setTopicQnumMap] = useState<Record<string, string>>(() => {
-    try { return JSON.parse(localStorage.getItem('latexify_callout_topic_qnum_map') || '{}'); } catch { return {}; }
+    try { return JSON.parse(safeGetItem('latexify_callout_topic_qnum_map') || '{}'); } catch { return {}; }
   });
 
   useEffect(() => {
-    localStorage.setItem('latexify_callout_qnum', qnum);
-    localStorage.setItem('latexify_callout_topic', topic);
-    localStorage.setItem('latexify_callout_source', source);
+    safeSetItem('latexify_callout_qnum', qnum);
+    safeSetItem('latexify_callout_topic', topic);
+    safeSetItem('latexify_callout_source', source);
   }, [qnum, topic, source]);
 
   // Sync computed title into the first block
@@ -213,8 +216,8 @@ export function CalloutBuilderModal({ isOpen, onClose, initialContent = '' }: { 
         
         // Remove spaces inside inline math formulas for Obsidian compatibility 
         // e.g., "$  formula $" -> "$formula$"
-        let fixedContent = block.content.replace(/(?<!\$)\$([^$\n]+)\$(?!\$)/g, (match, p1) => {
-           return `$${p1.trim()}$`;
+        let fixedContent = block.content.replace(/(^|[^$])\$([^\$\n]+)\$(?=$|[^$])/g, (match, prefix, p1) => {
+           return `${prefix}$${p1.trim()}$`;
         });
         
         const contentLines = fixedContent.split('\n');
@@ -271,28 +274,51 @@ export function CalloutBuilderModal({ isOpen, onClose, initialContent = '' }: { 
     if (topic && !topicHistory.includes(topic)) {
       const newHis = [topic, ...topicHistory].slice(0, 10);
       setTopicHistory(newHis);
-      localStorage.setItem('latexify_callout_topic_his', JSON.stringify(newHis));
+      safeSetItem('latexify_callout_topic_his', JSON.stringify(newHis));
     }
     if (source && !sourceHistory.includes(source)) {
       const newHis = [source, ...sourceHistory].slice(0, 10);
       setSourceHistory(newHis);
-      localStorage.setItem('latexify_callout_source_his', JSON.stringify(newHis));
+      safeSetItem('latexify_callout_source_his', JSON.stringify(newHis));
     }
     
     let nextQnum = qnum;
-    if (qnum) {
-      nextQnum = qnum.replace(/(\d+)(?!.*\d)/, (match) => String(parseInt(match, 10) + 1));
+    if (qnum && /\d/.test(qnum)) {
+      nextQnum = qnum.replace(/(\d+)(?!.*\d)/, (match) => {
+        const num = String(parseInt(match, 10) + 1);
+        return num.padStart(match.length, '0');
+      });
       setQnum(nextQnum);
       if (topic) {
-        const newMap = { ...topicQnumMap, [topic]: nextQnum };
-        setTopicQnumMap(newMap);
-        localStorage.setItem('latexify_callout_topic_qnum_map', JSON.stringify(newMap));
+        setTopicQnumMap(prev => {
+          const newMap = { ...prev, [topic]: nextQnum };
+          safeSetItem('latexify_callout_topic_qnum_map', JSON.stringify(newMap));
+          return newMap;
+        });
       }
     }
     
-    await navigator.clipboard.writeText(generatedMd);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(generatedMd);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      // Fallback for browsers that block clipboard API when not focused or outside HTTPS
+      const textArea = document.createElement('textarea');
+      textArea.value = generatedMd;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-9999px';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err2) {
+        console.error('Failed to copy', err2);
+      }
+      document.body.removeChild(textArea);
+    }
   };
 
   if (!isOpen) return null;
@@ -379,7 +405,7 @@ export function CalloutBuilderModal({ isOpen, onClose, initialContent = '' }: { 
                                 if (topic) {
                                   const newMap = { ...topicQnumMap, [topic]: newQnum };
                                   setTopicQnumMap(newMap);
-                                  localStorage.setItem('latexify_callout_topic_qnum_map', JSON.stringify(newMap));
+                                  safeSetItem('latexify_callout_topic_qnum_map', JSON.stringify(newMap));
                                 }
                               }}
                               className="flex-[0.5] min-w-[50px] text-xs py-1 px-2 rounded bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-700 focus:outline-none focus:border-indigo-500"
